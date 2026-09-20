@@ -1,0 +1,456 @@
+@import "tailwindcss";
+
+@theme {
+  /* Taken from the Hadron logo */
+  --color-navy: #1e3661;
+  --color-navy-deep: #14264a;
+  --color-sky: #55a0d0;
+  --color-sky-soft: #e6f1fa;
+
+  --color-ink: #0f2240;
+  --color-ink-soft: #475d78;
+  --color-mist: #f3f7fb;
+  --color-paper: #ffffff;
+  --color-line: #d6e3ee;
+  --color-line-strong: #a3bbd1;
+
+  --color-cedar: #17795a;
+  --color-marker: #b8322a; /* errors and destructive actions only */
+  --color-highlight: #d3e8f6;
+
+  --color-brand: #1e3661; /* button and badge fills */
+  --color-brand-hover: #14264a;
+  --color-header: #1e3661;
+}
+
+/* Light is the default. Dark overrides the same variables, so every page follows automatically. */
+:root {
+  --hero-a: #1e3661;
+  --hero-b: #14264a;
+  --input-bg: #ffffff;
+  --danger-soft: #fdecea;
+  --badge-bg: #e4ecf4;
+  --badge-live-bg: #d8efe4;
+  --badge-live-fg: #17795a;
+  --badge-wait-bg: #fff1c2;
+  --badge-wait-fg: #6b5200;
+  --badge-bad-bg: #fbdedb;
+  --badge-bad-fg: #8f241d;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-navy: #9fcdf0;
+  --color-navy-deep: #0d1b33;
+  --color-sky-soft: #1a2f4c;
+  --color-ink: #e7eef7;
+  --color-ink-soft: #9fb3c9;
+  --color-mist: #0b1424;
+  --color-paper: #12203a;
+  --color-line: #263a58;
+  --color-line-strong: #3f5a80;
+  --color-cedar: #4cc59a;
+  --color-marker: #ff8f85;
+  --color-highlight: #1f3a5c;
+  --color-brand: #3a78b0;
+  --color-brand-hover: #4a89c2;
+  --color-header: #0f2039;
+  --hero-a: #0f2039;
+  --hero-b: #091426;
+  --input-bg: #0e1a30;
+  --danger-soft: #3a1c1c;
+  --badge-bg: #1f3352;
+  --badge-live-bg: #123a2e;
+  --badge-live-fg: #6fdcb3;
+  --badge-wait-bg: #4a3d10;
+  --badge-wait-fg: #ffd866;
+  --badge-bad-bg: #40201f;
+  --badge-bad-fg: #ffaaa2;
+}
+
+html {
+  background: var(--color-mist);
+  color: var(--color-ink);
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[lang="en"] body {
+  font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+html[lang="ar"] body {
+  font-family: "Cairo", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+}
+
+body {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-size: 1rem;
+  line-height: 1.65;
+  overflow-x: clip;
+}
+
+:focus-visible {
+  outline: 3px solid #2f80c0;
+  outline-offset: 2px;
+}
+.on-navy :focus-visible {
+  outline-color: #fff;
+}
+
+.display {
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+html[lang="en"] .display {
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+}
+html[lang="ar"] .display {
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+@layer components {
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1.5px solid transparent;
+    border-radius: 0.65rem;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+  .btn-primary {
+    background: var(--color-brand);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+  }
+  .btn-sky {
+    background: var(--color-sky);
+    color: #14264a;
+  }
+  .btn-sky:hover:not(:disabled) {
+    background: #6cb0dc;
+  }
+  .btn-light {
+    background: #fff;
+    color: #1e3661;
+  }
+  .btn-light:hover:not(:disabled) {
+    background: #e6f1fa;
+  }
+  .btn-outline {
+    border-color: var(--color-navy);
+    color: var(--color-navy);
+    background: transparent;
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-sky-soft);
+  }
+  .btn-ghost-light {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
+  }
+  .btn-ghost-light:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .btn-danger {
+    border-color: var(--color-marker);
+    color: var(--color-marker);
+    background: transparent;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger-soft);
+  }
+  .btn-quiet {
+    padding: 0.35rem 0.5rem;
+    color: var(--color-navy);
+  }
+  .btn-quiet:hover {
+    text-decoration: underline;
+  }
+
+  /* Links inside the navy header */
+  .navlink {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    border-radius: 0.55rem;
+    padding: 0.35rem 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  @media (min-width: 640px) {
+    .navlink {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.95rem;
+    }
+  }
+  .navlink:hover,
+  .navlink[aria-current="page"] {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  /* ---------- Forms ---------- */
+  .input {
+    width: 100%;
+    border: 1.5px solid var(--color-line-strong);
+    border-radius: 0.65rem;
+    background: var(--input-bg);
+    padding: 0.65rem 0.85rem;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--color-ink);
+  }
+  .input::placeholder {
+    color: #8aa0b8;
+    opacity: 1;
+  }
+  .input:focus {
+    border-color: var(--color-sky);
+    box-shadow: 0 0 0 3px rgba(85, 160, 208, 0.25);
+    outline: none;
+  }
+  .label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .hint {
+    margin-top: 0.3rem;
+    font-size: 0.85rem;
+    color: var(--color-ink-soft);
+  }
+  .check-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1.5px solid var(--color-line-strong);
+    border-radius: 0.65rem;
+    background: var(--color-paper);
+    padding: 0.55rem 0.8rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .check-chip:has(input:checked) {
+    border-color: var(--color-navy);
+    background: var(--color-sky-soft);
+  }
+  .check-chip:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Surfaces ---------- */
+  .panel {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 34, 64, 0.04);
+  }
+  @media (min-width: 640px) {
+    .panel {
+      padding: 1.5rem;
+    }
+  }
+
+  .badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 0.1rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--badge-bg);
+    color: var(--color-ink);
+  }
+  .badge-live {
+    background: var(--badge-live-bg);
+    color: var(--badge-live-fg);
+  }
+  .badge-wait {
+    background: var(--badge-wait-bg);
+    color: var(--badge-wait-fg);
+  }
+  .badge-bad {
+    background: var(--badge-bad-bg);
+    color: var(--badge-bad-fg);
+  }
+
+  .chip {
+    display: inline-block;
+    border-radius: 999px;
+    background: var(--color-sky-soft);
+    padding: 0.15rem 0.7rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-navy);
+  }
+
+  /* ---------- Hero band (echoes the ring in the logo) ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--hero-a) 0%, var(--hero-b) 100%);
+    color: #fff;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -110px;
+    inset-inline-end: -110px;
+    width: 340px;
+    height: 340px;
+    border: 46px solid rgba(85, 160, 208, 0.14);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+  @media (min-width: 768px) {
+    .hero::before {
+      top: -90px;
+      inset-inline-end: 4%;
+      width: 460px;
+      height: 460px;
+      border-width: 62px;
+    }
+  }
+  .hero > * {
+    position: relative;
+  }
+
+  /* ---------- Job card ---------- */
+  .card {
+    display: flex;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(15, 34, 64, 0.04);
+  }
+  .card:hover,
+  .card:has(a:focus-visible) {
+    border-color: var(--color-sky);
+    box-shadow: 0 6px 18px -8px rgba(30, 54, 97, 0.28);
+  }
+  .card > a {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  }
+  .card:hover .card-title {
+    text-decoration: underline;
+    text-decoration-color: var(--color-sky);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
+  }
+
+  .path-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    border-radius: 1.1rem;
+    background: var(--color-paper);
+    padding: 1.5rem;
+    color: var(--color-ink);
+    box-shadow: 0 10px 30px -14px rgba(5, 15, 35, 0.55);
+  }
+
+  .step-num {
+    display: flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-brand);
+    color: #fff;
+    font-weight: 800;
+  }
+
+  /* ---------- Slider switches (language, light/dark) ---------- */
+  .switch {
+    position: relative;
+    display: inline-flex;
+    width: 4.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+  }
+  .switch:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .switch-thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    border-radius: 999px;
+    background: #fff;
+    transition: transform 0.18s ease;
+  }
+  .switch[aria-checked="true"] .switch-thumb {
+    transform: translateX(100%);
+  }
+  .switch-label {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .switch-label[data-active="true"] {
+    color: #14264a;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .switch-thumb {
+      transition: none;
+    }
+  }
+}
+
+/* The footer shows whichever logo suits the current theme */
+.logo-dark-only {
+  display: none;
+}
+html[data-theme="dark"] .logo-light-only {
+  display: none;
+}
+html[data-theme="dark"] .logo-dark-only {
+  display: inline-block;
+}
