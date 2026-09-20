@@ -10,7 +10,7 @@ import { JobNotice } from '@/components/JobNotice'
 import { Flash, type SearchParams } from '@/components/Flash'
 
 const SELECT =
-  'id, business_id, title, description, job_type, areas, salary_min, salary_max, salary_currency, status, paid_at, expires_at, created_at, businesses(name, category, areas, address, description, phone, email, website, logo_path, verified)'
+  'id, business_id, title, description, job_type, areas, salary_min, salary_max, salary_currency, display_name, contact_email, contact_phone, contact_website, status, paid_at, expires_at, created_at, businesses(name, category, areas, address, description, phone, email, website, logo_path, verified)'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const locale = await getLocaleParam(params)

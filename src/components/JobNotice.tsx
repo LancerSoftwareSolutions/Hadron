@@ -3,6 +3,7 @@ import type { Dict, Locale } from '@/lib/i18n'
 import type { ListingWithBusiness } from '@/lib/types'
 import { formatSalary, logoUrl } from '@/lib/format'
 import { areasLabel } from '@/lib/areas'
+import { contactFor } from '@/lib/contact'
 
 export function VerifiedMark({ label }: { label: string }) {
   return (
@@ -31,16 +32,17 @@ export function BusinessMark({ name, logoPath, size = 'md' }: { name: string; lo
 // A job shown as a card on the job lists.
 export function JobNotice({ job, locale, t }: { job: ListingWithBusiness; locale: Locale; t: Dict }) {
   const business = job.businesses
+  const c = contactFor(job, business)
 
   return (
     <li className="card">
       <Link href={`/${locale}/jobs/${job.id}`} className="p-5">
         <div className="flex items-center gap-3">
-          {business && <BusinessMark name={business.name} logoPath={business.logo_path} />}
+          {business && <BusinessMark name={c.name} logoPath={c.logoPath} />}
           <span dir="auto" className="truncate font-semibold text-ink-soft">
-            {business?.name}
+            {c.name}
           </span>
-          {business?.verified && <VerifiedMark label={t.job.verified} />}
+          {c.verified && <VerifiedMark label={t.job.verified} />}
         </div>
 
         <h3 dir="auto" className="card-title display mt-4 text-[1.35rem]">

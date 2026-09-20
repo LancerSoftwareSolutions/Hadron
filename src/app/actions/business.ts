@@ -1,7 +1,11 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { go, localeOf, num, oneOf, optStr, requireActionUser, str } from '@/lib/actions'
 import { parseAreas } from '@/lib/areas'
+import { contactIsValid, sameText } from '@/lib/contact'
+import { getPaymentSettings } from '@/lib/settings'
+import type { Locale } from '@/lib/i18n'
 import {
   APPLICATION_STATUSES,
   CATEGORIES,
@@ -16,7 +20,7 @@ export async function saveBusiness(formData: FormData) {
   const locale = localeOf(formData)
   const { supabase, user } = await requireActionUser(locale, 'business')
 
-  const name = str(formData, 'name')
+  const name = str(formData, 'name').slice(0, 100)
   if (!name) go(locale, '/business', 'err', 'name_required')
 
   // A category is either one from the list, or text the owner typed in themselves.
@@ -31,13 +35,14 @@ export async function saveBusiness(formData: FormData) {
     name,
     category,
     areas: parseAreas(formData.getAll('areas')),
-    address: optStr(formData, 'address'),
-    description: optStr(formData, 'description'),
-    phone: optStr(formData, 'phone'),
-    email: optStr(formData, 'email'),
+    address: optStr(formData, 'address')?.slice(0, 200) ?? null,
+    description: optStr(formData, 'description')?.slice(0, 2000) ?? null,
+    phone: optStr(formData, 'phone')?.slice(0, 40) ?? null,
+    email: optStr(formData, 'email')?.slice(0, 120) ?? null,
     // The website is optional. Leaving it empty is fine.
     website: optStr(formData, 'website')?.replace(/\s+/g, '').slice(0, 200) || null,
   }
+  if (!contactIsValid(values)) go(locale, '/business', 'err', 'contact_invalid')
 
   // A logo path is only accepted if it sits in this user's own storage folder.
   const logo = optStr(formData, 'logo_path')
@@ -55,24 +60,44 @@ export async function saveBusiness(formData: FormData) {
   go(locale, '/business', 'ok', 'business_saved')
 }
 
-export async function createListing(formData: FormData) {
-  const locale = localeOf(formData)
-  const { supabase } = await requireActionUser(locale, 'business')
-
-  const businessId = str(formData, 'business_id')
-  const title = str(formData, 'title')
-  const description = str(formData, 'description')
+// Reads and checks the job form. Contact details that match the business's own are stored as
+// "empty", so the job keeps following the business if those details change later.
+async function readListingFields(
+  formData: FormData,
+  supabase: SupabaseClient,
+  businessId: string,
+  locale: Locale,
+  back: string,
+) {
+  const title = str(formData, 'title').slice(0, 150)
+  const description = str(formData, 'description').slice(0, 5000)
   const min = num(formData, 'salary_min')
   const max = num(formData, 'salary_max')
 
-  if (!businessId) go(locale, '/business', 'err', 'no_business')
-  if (!title || !description) go(locale, '/business', 'err', 'listing_invalid')
-  if (min != null && max != null && min > max) go(locale, '/business', 'err', 'salary_range')
+  if (!title || !description) go(locale, back, 'err', 'listing_invalid')
+  if ((min != null && min < 0) || (max != null && max < 0) || (min != null && max != null && min > max)) {
+    go(locale, back, 'err', 'salary_range')
+  }
+
+  const contact = {
+    name: optStr(formData, 'display_name')?.slice(0, 100) ?? null,
+    email: optStr(formData, 'contact_email'),
+    phone: optStr(formData, 'contact_phone'),
+    website: optStr(formData, 'contact_website')?.replace(/\s+/g, '') || null,
+  }
+  if (!contactIsValid(contact)) go(locale, back, 'err', 'contact_invalid')
+
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('name, email, phone, website')
+    .eq('id', businessId)
+    .maybeSingle()
+  const override = (value: string | null, base: string | null | undefined) =>
+    value && !sameText(value, base) ? value : null
 
   const areas = parseAreas(formData.getAll('areas'))
 
-  const { error } = await supabase.from('listings').insert({
-    business_id: businessId,
+  return {
     title,
     description,
     job_type: oneOf(str(formData, 'job_type'), JOB_TYPES) ?? 'full_time',
@@ -81,10 +106,53 @@ export async function createListing(formData: FormData) {
     salary_min: min,
     salary_max: max,
     salary_currency: oneOf(str(formData, 'salary_currency'), CURRENCIES) ?? 'USD',
-  })
+    display_name: override(contact.name, business?.name),
+    contact_email: override(contact.email, business?.email),
+    contact_phone: override(contact.phone, business?.phone),
+    contact_website: override(contact.website, business?.website),
+  }
+}
+
+export async function createListing(formData: FormData) {
+  const locale = localeOf(formData)
+  const { supabase } = await requireActionUser(locale, 'business')
+
+  const businessId = str(formData, 'business_id')
+  if (!businessId) go(locale, '/business', 'err', 'no_business')
+
+  const fields = await readListingFields(formData, supabase, businessId, locale, '/business')
+  const { error } = await supabase.from('listings').insert({ business_id: businessId, ...fields })
 
   if (error) go(locale, '/business', 'err', 'save_failed')
   go(locale, '/business', 'ok', 'listing_created')
+}
+
+export async function updateListing(formData: FormData) {
+  const locale = localeOf(formData)
+  const { supabase } = await requireActionUser(locale, 'business')
+
+  const listingId = str(formData, 'listing_id')
+  const back = `/business/listings/${listingId}/edit`
+
+  const { data: listing } = await supabase.from('listings').select('business_id, status').eq('id', listingId).maybeSingle()
+  if (!listing) go(locale, '/business', 'err', 'save_failed')
+  if (listing.status === 'closed') go(locale, '/business', 'err', 'closed_no_edit')
+
+  const fields = await readListingFields(formData, supabase, listing.business_id, locale, back)
+  const { error } = await supabase.from('listings').update(fields).eq('id', listingId)
+
+  if (error) go(locale, back, 'err', 'save_failed')
+  go(locale, '/business', 'ok', 'listing_updated')
+}
+
+// The database only allows this for jobs that never had a payment record.
+export async function deleteListing(formData: FormData) {
+  const locale = localeOf(formData)
+  const { supabase } = await requireActionUser(locale, 'business')
+
+  const { data, error } = await supabase.from('listings').delete().eq('id', str(formData, 'listing_id')).select('id')
+  if (error || !data || data.length === 0) go(locale, '/business', 'err', 'delete_failed')
+  go(locale, '/business', 'ok', 'listing_deleted')
 }
 
 export async function closeListing(formData: FormData) {
@@ -100,19 +168,61 @@ export async function recordPayment(formData: FormData) {
   const locale = localeOf(formData)
   const { supabase } = await requireActionUser(locale, 'business')
 
-  const amount = num(formData, 'amount')
+  // With a fixed listing fee the database sets the amount. Otherwise the business types it.
+  const settings = await getPaymentSettings()
+  const amount = settings.fee ?? num(formData, 'amount')
   if (amount == null || amount <= 0) go(locale, '/business', 'err', 'amount_invalid')
+
+  const reference = optStr(formData, 'reference')?.slice(0, 100) ?? null
+  if (!reference) go(locale, '/business', 'err', 'reference_required')
 
   const { error } = await supabase.from('payments').insert({
     listing_id: str(formData, 'listing_id'),
     amount,
     currency: 'USD',
     method: oneOf(str(formData, 'method'), PAYMENT_METHODS) ?? 'whish',
-    reference: optStr(formData, 'reference'),
+    reference,
   })
 
-  if (error) go(locale, '/business', 'err', 'save_failed')
+  if (error) {
+    const reason = error.message.includes('one_pending') ? 'payment_already_waiting' : 'reference_used'
+    go(locale, '/business', 'err', error.code === '23505' ? reason : 'save_failed')
+  }
   go(locale, '/business', 'ok', 'payment_recorded')
+}
+
+// Fix the method or transaction number of a payment that has not been confirmed yet.
+export async function updatePayment(formData: FormData) {
+  const locale = localeOf(formData)
+  const { supabase } = await requireActionUser(locale, 'business')
+
+  const reference = optStr(formData, 'reference')?.slice(0, 100) ?? null
+  if (!reference) go(locale, '/business', 'err', 'reference_required')
+
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ method: oneOf(str(formData, 'method'), PAYMENT_METHODS) ?? 'whish', reference })
+    .eq('id', str(formData, 'payment_id'))
+    .select('id')
+
+  if (error) go(locale, '/business', 'err', error.code === '23505' ? 'reference_used' : 'save_failed')
+  if (!data || data.length === 0) go(locale, '/business', 'err', 'save_failed')
+  go(locale, '/business', 'ok', 'payment_updated')
+}
+
+// Cancel a payment that has not been confirmed yet. The record is kept, marked as cancelled.
+export async function cancelPayment(formData: FormData) {
+  const locale = localeOf(formData)
+  const { supabase } = await requireActionUser(locale, 'business')
+
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ status: 'cancelled' })
+    .eq('id', str(formData, 'payment_id'))
+    .select('id')
+
+  if (error || !data || data.length === 0) go(locale, '/business', 'err', 'save_failed')
+  go(locale, '/business', 'ok', 'payment_cancelled')
 }
 
 export async function updateApplicationStatus(formData: FormData) {

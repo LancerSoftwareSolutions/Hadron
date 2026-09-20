@@ -18,7 +18,9 @@ export function Field({
   inputMode,
   placeholder,
   minLength,
+  maxLength,
   min,
+  max,
   step,
 }: Base & {
   type?: string
@@ -27,7 +29,9 @@ export function Field({
   inputMode?: 'text' | 'numeric' | 'tel' | 'email' | 'decimal' | 'url'
   placeholder?: string
   minLength?: number
+  maxLength?: number
   min?: number
+  max?: number
   step?: string
 }) {
   const fieldId = id ?? name
@@ -46,7 +50,9 @@ export function Field({
         inputMode={inputMode}
         placeholder={placeholder}
         minLength={minLength}
+        maxLength={maxLength}
         min={min}
+        max={max}
         step={step}
         className="input"
         aria-describedby={hint ? `${fieldId}-hint` : undefined}
@@ -72,6 +78,7 @@ export function TextArea({
   noResize,
   autoComplete,
   inputMode,
+  maxLength,
 }: Base & {
   defaultValue?: string | null
   rows?: number
@@ -79,6 +86,7 @@ export function TextArea({
   noResize?: boolean
   autoComplete?: string
   inputMode?: 'text' | 'url'
+  maxLength?: number
 }) {
   const fieldId = id ?? name
   return (
@@ -95,6 +103,7 @@ export function TextArea({
         placeholder={placeholder}
         autoComplete={autoComplete}
         inputMode={inputMode}
+        maxLength={maxLength}
         className={noResize ? 'input resize-none' : 'input'}
         aria-describedby={hint ? `${fieldId}-hint` : undefined}
       />

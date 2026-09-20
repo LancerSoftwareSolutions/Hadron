@@ -59,6 +59,15 @@ export default async function SignupPage({
           autoComplete="new-password"
           hint={t.auth.passwordHint}
         />
+        <label className="flex items-start gap-3 text-sm">
+          <input type="checkbox" name="accept_terms" required className="mt-1 size-4 shrink-0 accent-sky" />
+          <span>
+            {t.auth.agreePrefix}
+            <Link href={`/${locale}/terms`} target="_blank" className="font-bold text-navy underline">
+              {t.auth.agreeLink}
+            </Link>
+          </span>
+        </label>
         <SubmitButton pending={t.auth.working}>{t.auth.signupButton}</SubmitButton>
       </form>
       <p className="mt-6 text-ink-soft">

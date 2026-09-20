@@ -6,6 +6,7 @@ import { getLocaleParam, getSessionUser } from '@/lib/auth'
 import { getDict } from '@/lib/i18n'
 import { formatDate, formatSalary, telUrl, whatsappUrl } from '@/lib/format'
 import { areasLabel } from '@/lib/areas'
+import { contactFor, EMAIL_RE, safeWebsiteUrl } from '@/lib/contact'
 import type { Application, ListingWithBusiness } from '@/lib/types'
 import { applyToListing, withdrawApplication } from '@/app/actions/seeker'
 import { BusinessMark, VerifiedMark } from '@/components/JobNotice'
@@ -16,7 +17,7 @@ import { TextArea } from '@/components/Field'
 type Props = { params: Promise<{ locale: string; id: string }>; searchParams: Promise<SearchParams> }
 
 const SELECT =
-  'id, business_id, title, description, job_type, areas, salary_min, salary_max, salary_currency, status, paid_at, expires_at, created_at, businesses(name, category, areas, address, description, phone, email, website, logo_path, verified)'
+  'id, business_id, title, description, job_type, areas, salary_min, salary_max, salary_currency, display_name, contact_email, contact_phone, contact_website, status, paid_at, expires_at, created_at, businesses(name, category, areas, address, description, phone, email, website, logo_path, verified)'
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
@@ -39,6 +40,7 @@ export default async function JobPage({ params, searchParams }: Props) {
 
   const job = data as unknown as ListingWithBusiness
   const business = job.businesses
+  const c = contactFor(job, business)
   const isOpen = job.status === 'active' && job.expires_at !== null && new Date(job.expires_at) > new Date()
 
   const user = await getSessionUser()
@@ -66,10 +68,10 @@ export default async function JobPage({ params, searchParams }: Props) {
         <article>
           <Flash t={t} sp={sp} />
           <div className="flex items-center gap-3">
-            {business && <BusinessMark name={business.name} logoPath={business.logo_path} />}
+            {business && <BusinessMark name={c.name} logoPath={c.logoPath} />}
             <p dir="auto" className="flex items-center gap-2 font-bold text-ink-soft">
-              {business?.name}
-              {business?.verified && <VerifiedMark label={t.job.verified} />}
+              {c.name}
+              {c.verified && <VerifiedMark label={t.job.verified} />}
             </p>
           </div>
           <h1 dir="auto" className="display mt-3 text-[2rem] sm:text-4xl">{job.title}</h1>
@@ -95,7 +97,7 @@ export default async function JobPage({ params, searchParams }: Props) {
           <h2 className="display mt-10 text-xl">{t.job.about}</h2>
           <p dir="auto" className="mt-3 max-w-prose whitespace-pre-line">{job.description}</p>
 
-          {business?.description && (
+          {business?.description && c.sameBusiness && (
             <>
               <h2 className="display mt-10 text-xl">{t.job.aboutBusiness}</h2>
               <p dir="auto" className="mt-3 max-w-prose whitespace-pre-line">{business.description}</p>
@@ -156,32 +158,32 @@ export default async function JobPage({ params, searchParams }: Props) {
             )}
           </section>
 
-          {business && (business.phone || business.email || business.website) && (
+          {(c.phone || c.email || c.website) && (
             <section className="panel">
               <h2 className="display text-xl">{t.job.contact}</h2>
               <ul className="mt-3 grid gap-2">
-                {business.phone && (
+                {c.phone && (
                   <li className="flex flex-wrap gap-2">
-                    <a href={whatsappUrl(business.phone)} className="btn btn-outline" rel="noopener">
+                    <a href={whatsappUrl(c.phone)} className="btn btn-outline" rel="noopener">
                       {t.job.whatsapp}
                     </a>
-                    <a href={telUrl(business.phone)} className="btn btn-outline">
+                    <a href={telUrl(c.phone)} className="btn btn-outline">
                       {t.job.call}
                     </a>
-                    <bdi className="w-full text-sm text-ink-soft">{business.phone}</bdi>
+                    <bdi className="w-full text-sm text-ink-soft">{c.phone}</bdi>
                   </li>
                 )}
-                {business.email && (
+                {c.email && EMAIL_RE.test(c.email) && (
                   <li>
-                    <a href={`mailto:${business.email}`} className="break-all font-bold underline">
-                      {business.email}
+                    <a href={`mailto:${c.email}`} className="break-all font-bold underline">
+                      {c.email}
                     </a>
                   </li>
                 )}
-                {business.website && (
+                {c.website && safeWebsiteUrl(c.website) && (
                   <li>
                     <a
-                      href={/^https?:\/\//.test(business.website) ? business.website : `https://${business.website}`}
+                      href={safeWebsiteUrl(c.website) ?? '#'}
                       className="break-all font-bold underline"
                       rel="noopener noreferrer"
                       target="_blank"

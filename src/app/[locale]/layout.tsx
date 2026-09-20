@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { dirOf, getDict, isLocale } from '@/lib/i18n'
@@ -64,7 +65,12 @@ export default async function LocaleLayout({
             <img src="/logo-dark.png" alt={t.brand} width={542} height={176} className="logo-light-only h-8 w-auto" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-light.png" alt={t.brand} width={542} height={176} className="logo-dark-only h-8 w-auto" />
-            <p className="max-w-md text-sm text-ink-soft">{t.footer}</p>
+            <div className="flex max-w-md flex-col items-start gap-2">
+              <p className="text-sm text-ink-soft">{t.footer}</p>
+              <Link href={`/${locale}/terms`} className="text-sm font-bold text-navy underline">
+                {t.footerTerms}
+              </Link>
+            </div>
           </div>
         </footer>
       </body>

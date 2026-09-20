@@ -2,7 +2,7 @@ import type { ApplicationStatus, Currency, JobType } from './constants'
 
 export type Role = 'seeker' | 'business' | 'admin'
 export type ListingStatus = 'pending_payment' | 'active' | 'expired' | 'closed'
-export type PaymentStatus = 'pending' | 'confirmed' | 'rejected'
+export type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'cancelled'
 
 export interface SessionUser {
   id: string
@@ -41,6 +41,11 @@ export interface Listing {
   salary_min: number | null
   salary_max: number | null
   salary_currency: Currency
+  display_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  contact_website: string | null
+  payment_code: string
   status: ListingStatus
   paid_at: string | null
   expires_at: string | null

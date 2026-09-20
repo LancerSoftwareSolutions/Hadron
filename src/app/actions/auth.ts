@@ -15,6 +15,9 @@ export async function signUp(formData: FormData) {
   const phone = str(formData, 'phone')
   const role: Role = str(formData, 'role') === 'business' ? 'business' : 'seeker'
 
+  if (str(formData, 'accept_terms') !== 'on') {
+    go(locale, `/signup?role=${role}`, 'err', 'terms_required')
+  }
   if (!email || password.length < 8 || !fullName || !phone) {
     go(locale, `/signup?role=${role}`, 'err', 'invalid_signup')
   }
@@ -27,7 +30,7 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName, phone, role },
+      data: { full_name: fullName.slice(0, 100), phone: phone.slice(0, 40), role, terms_accepted_at: new Date().toISOString() },
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(dest)}`,
     },
   })

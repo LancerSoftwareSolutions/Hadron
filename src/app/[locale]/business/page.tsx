@@ -2,10 +2,20 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getLocaleParam, requireRole } from '@/lib/auth'
 import { getDict, type Dict, type Locale } from '@/lib/i18n'
-import { CATEGORIES, CURRENCIES, JOB_TYPES, LISTING_FEE_USD, LOGO_MAX_MB, PAYMENT_METHODS, WHISH_NUMBER } from '@/lib/constants'
-import { effectiveStatus, formatDate, logoUrl } from '@/lib/format'
+import { CATEGORIES, LOGO_MAX_MB, PAYMENT_METHODS } from '@/lib/constants'
+import { daysLeft, effectiveStatus, formatDate, logoUrl } from '@/lib/format'
+import { formatFee, getPaymentSettings, type PaymentSettings } from '@/lib/settings'
 import type { Business, Listing, Payment } from '@/lib/types'
-import { closeListing, createListing, recordPayment, saveBusiness } from '@/app/actions/business'
+import {
+  cancelPayment,
+  closeListing,
+  createListing,
+  deleteListing,
+  recordPayment,
+  saveBusiness,
+  updatePayment,
+} from '@/app/actions/business'
+import { ListingFields } from '@/components/ListingFields'
 import { Field, SelectField, TextArea } from '@/components/Field'
 import { AreaPicker } from '@/components/AreaPicker'
 import { CategoryField } from '@/components/CategoryField'
@@ -54,6 +64,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
     }
   }
 
+  const settings = await getPaymentSettings()
   const categoryOptions = CATEGORIES.map((c) => ({ value: c, label: t.categories[c] }))
 
   return (
@@ -81,6 +92,7 @@ export default async function BusinessPage({ params, searchParams }: Props) {
                 applicants={applicantCounts[l.id] ?? 0}
                 locale={locale}
                 t={t}
+                settings={settings}
               />
             ))}
           </ul>
@@ -90,15 +102,23 @@ export default async function BusinessPage({ params, searchParams }: Props) {
             <form action={createListing} className="mt-5 grid gap-4">
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="business_id" value={business.id} />
-              <Field label={t.business.jobTitle} name="title" id="listing-title" required />
-              <TextArea label={t.business.jobDescription} name="description" id="listing-description" required rows={6} hint={t.business.jobDescriptionHint} />
-              <SelectField label={t.business.jobType} name="job_type" id="listing-type" options={JOB_TYPES.map((j) => ({ value: j, label: t.jobTypes[j] }))} defaultValue="full_time" />
-              <AreaPicker idPrefix="listing" label={t.business.areasJob} hint={t.business.areasHint} selected={business.areas} labels={t.areas} />
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label={t.business.salaryMin} name="salary_min" type="number" min={0} inputMode="numeric" />
-                <Field label={t.business.salaryMax} name="salary_max" type="number" min={0} inputMode="numeric" />
-                <SelectField label={t.business.currency} name="salary_currency" options={CURRENCIES.map((c) => ({ value: c, label: c }))} defaultValue="USD" />
-              </div>
+              <ListingFields
+                t={t}
+                idPrefix="new"
+                defaults={{
+                  title: '',
+                  description: '',
+                  job_type: 'full_time',
+                  areas: business.areas,
+                  salary_min: null,
+                  salary_max: null,
+                  salary_currency: 'USD',
+                  display_name: business.name,
+                  contact_email: business.email,
+                  contact_phone: business.phone,
+                  contact_website: business.website,
+                }}
+              />
               <div>
                 <SubmitButton pending={t.business.saving}>{t.business.createListing}</SubmitButton>
               </div>
@@ -163,17 +183,27 @@ function ListingRow({
   applicants,
   locale,
   t,
+  settings,
 }: {
   listing: Listing
   payments: Payment[]
   applicants: number
   locale: Locale
   t: Dict
+  settings: PaymentSettings
 }) {
   const status = effectiveStatus(listing)
   const latest = payments[0]
-  const needsPayment = status === 'pending_payment' || status === 'expired'
+  // Only jobs that never had a payment can be deleted. Others can be closed.
+  const canDelete = payments.length === 0
+  const remaining = status === 'active' ? daysLeft(listing.expires_at) : 0
+  const renewSoon = status === 'active' && remaining <= 7
+  const canPay = status === 'pending_payment' || status === 'expired' || renewSoon
+  const hasPending = latest?.status === 'pending'
   const badge = status === 'active' ? 'badge-live' : status === 'pending_payment' ? 'badge-wait' : ''
+  const methodLabel = (m: string) => (t.business.methods as Record<string, string>)[m] ?? m
+  const methodOptions = PAYMENT_METHODS.map((m) => ({ value: m, label: t.business.methods[m] }))
+  const fixedFee = settings.fee != null ? formatFee(settings.fee) : null
 
   return (
     <li className="panel">
@@ -193,6 +223,11 @@ function ListingRow({
         </Link>
         <span className="text-sm font-bold text-ink-soft">{t.business.applicants(applicants)}</span>
         {status !== 'closed' && (
+          <Link href={`/${locale}/business/listings/${listing.id}/edit`} className="btn btn-outline">
+            {t.business.edit}
+          </Link>
+        )}
+        {status !== 'closed' && (
           <form action={closeListing} className="ms-auto">
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="listing_id" value={listing.id} />
@@ -201,30 +236,105 @@ function ListingRow({
         )}
       </div>
 
-      {needsPayment && (
-        <div className="mt-5 border-t-2 border-dashed border-line-strong pt-5">
-          <h4 className="font-extrabold">{status === 'expired' ? t.business.renewTitle : t.business.payTitle}</h4>
+      {canDelete ? (
+        <details className="mt-4">
+          <summary className="btn btn-danger inline-flex cursor-pointer list-none">{t.business.deleteJob}</summary>
+          <div className="mt-3 rounded-lg border border-marker p-4">
+            <p className="font-semibold">{t.business.deleteWarning(applicants)}</p>
+            <form action={deleteListing} className="mt-3">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="listing_id" value={listing.id} />
+              <SubmitButton className="btn btn-danger">{t.business.deleteConfirm}</SubmitButton>
+            </form>
+          </div>
+        </details>
+      ) : (
+        <p className="mt-3 text-sm text-ink-soft">{t.business.keepRecords}</p>
+      )}
 
-          {latest?.status === 'pending' ? (
-            <p className="mt-2 font-semibold text-cedar">{t.business.waiting}</p>
+      {renewSoon && <p className="mt-4 rounded-lg bg-sky-soft px-4 py-3 font-semibold">{t.business.renewSoon(remaining)}</p>}
+
+      {canPay && (
+        <div className="mt-5 border-t-2 border-dashed border-line-strong pt-5">
+          <h4 className="font-extrabold">{status === 'pending_payment' ? t.business.payTitle : t.business.renewTitle}</h4>
+
+          {hasPending ? (
+            <>
+              <p className="mt-2 font-semibold text-cedar">{t.business.waiting}</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                {methodLabel(latest.method)}, <bdi>{latest.reference}</bdi>
+              </p>
+              <details className="mt-3">
+                <summary className="cursor-pointer font-bold text-navy underline">{t.business.fixOrCancel}</summary>
+                <p className="hint">{t.business.fixOrCancelHint}</p>
+                <form action={updatePayment} className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="payment_id" value={latest.id} />
+                  <SelectField label={t.business.method} name="method" id={`fix-method-${latest.id}`} options={methodOptions} defaultValue={latest.method} />
+                  <Field label={t.business.reference} name="reference" id={`fix-reference-${latest.id}`} required maxLength={100} defaultValue={latest.reference} />
+                  <div className="sm:col-span-2">
+                    <SubmitButton className="btn btn-outline" pending={t.business.saving}>
+                      {t.business.saveChanges}
+                    </SubmitButton>
+                  </div>
+                </form>
+                <form action={cancelPayment} className="mt-3">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="payment_id" value={latest.id} />
+                  <SubmitButton className="btn btn-danger">{t.business.cancelPayment}</SubmitButton>
+                </form>
+              </details>
+            </>
           ) : (
             <>
               {latest?.status === 'rejected' && <p className="mt-2 font-semibold text-marker">{t.business.rejected}</p>}
-              <p className="mt-2 text-ink-soft">{t.business.payIntro(LISTING_FEE_USD)}</p>
-              {WHISH_NUMBER && <p className="mt-1 font-bold">{t.business.payTo(WHISH_NUMBER)}</p>}
-              <form action={recordPayment} className="mt-4 grid gap-4 sm:grid-cols-3">
+              <p className="mt-2 text-ink-soft">{t.business.payIntro(fixedFee ?? '')}</p>
+              {settings.whishNumber && <p className="mt-1 font-bold">{t.business.payTo(settings.whishNumber)}</p>}
+
+              <div className="mt-4 rounded-lg border-2 border-dashed border-line-strong p-3">
+                <p className="label !mb-0">{t.business.paymentCode}</p>
+                <p className="display text-2xl">
+                  <bdi>{listing.payment_code}</bdi>
+                </p>
+                <p className="hint">{t.business.paymentCodeHelp}</p>
+              </div>
+              {fixedFee && <p className="mt-4 text-lg font-extrabold">{t.business.amountFixed(fixedFee)}</p>}
+
+              <form action={recordPayment} className={`mt-4 grid gap-4 ${fixedFee ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="listing_id" value={listing.id} />
-                <Field label={t.business.amount} name="amount" id={`amount-${listing.id}`} type="number" min={0} step="0.01" inputMode="decimal" required defaultValue={LISTING_FEE_USD || undefined} />
-                <SelectField label={t.business.method} name="method" id={`method-${listing.id}`} options={PAYMENT_METHODS.map((m) => ({ value: m, label: t.business.methods[m] }))} />
-                <Field label={t.business.reference} name="reference" id={`reference-${listing.id}`} hint={t.business.referenceHint} required />
-                <div className="sm:col-span-3">
+                {!fixedFee && (
+                  <Field label={t.business.amount} name="amount" id={`amount-${listing.id}`} type="number" min={0} step="0.01" inputMode="decimal" required />
+                )}
+                <SelectField label={t.business.method} name="method" id={`method-${listing.id}`} options={methodOptions} />
+                <Field label={t.business.reference} name="reference" id={`reference-${listing.id}`} hint={t.business.referenceHint} required maxLength={100} />
+                <div className={fixedFee ? 'sm:col-span-2' : 'sm:col-span-3'}>
                   <SubmitButton pending={t.business.saving}>{t.business.recordPayment}</SubmitButton>
                 </div>
               </form>
             </>
           )}
         </div>
+      )}
+
+      {payments.length > 0 && (
+        <details className="mt-4">
+          <summary className="cursor-pointer font-bold text-navy underline">
+            {t.business.paymentHistory} ({payments.length})
+          </summary>
+          <ul className="mt-3 grid gap-2">
+            {payments.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+                <span>
+                  {formatDate(p.created_at, locale)}, <bdi>${formatFee(Number(p.amount))}</bdi>, {methodLabel(p.method)}, <bdi>{p.reference}</bdi>
+                </span>
+                <span className={`badge ${p.status === 'confirmed' ? 'badge-live' : p.status === 'pending' ? 'badge-wait' : 'badge-bad'}`}>
+                  {t.admin.paymentStatus[p.status]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </li>
   )

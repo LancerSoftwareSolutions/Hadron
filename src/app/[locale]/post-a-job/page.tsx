@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getLocaleParam, getSessionUser } from '@/lib/auth'
 import { getDict } from '@/lib/i18n'
-import { LISTING_FEE_USD } from '@/lib/constants'
+import { formatFee, getPublicFee } from '@/lib/settings'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const locale = await getLocaleParam(params)
@@ -14,6 +14,7 @@ export default async function PostAJob({ params }: { params: Promise<{ locale: s
   const t = getDict(locale)
   const p = t.post
   const user = await getSessionUser()
+  const fee = await getPublicFee()
 
   const cta = !user ? (
     <div className="flex flex-wrap items-center gap-3">
@@ -42,7 +43,7 @@ export default async function PostAJob({ params }: { params: Promise<{ locale: s
         <div className="mx-auto w-full max-w-6xl px-4 pb-14 pt-8 md:pb-20 md:pt-14">
           <h1 className="display max-w-3xl text-4xl md:text-6xl">{p.title}</h1>
           <p className="mt-4 max-w-xl text-lg text-white/80">{p.sub}</p>
-          {LISTING_FEE_USD && <p className="mt-4 inline-block rounded-full bg-white/12 px-4 py-1.5 font-bold">{p.fee(LISTING_FEE_USD)}</p>}
+          {fee !== null && <p className="mt-4 inline-block rounded-full bg-white/12 px-4 py-1.5 font-bold">{p.fee(formatFee(fee))}</p>}
           <div className="mt-8">{cta}</div>
         </div>
       </section>

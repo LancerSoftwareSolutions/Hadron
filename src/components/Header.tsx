@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { getSessionUser, homeFor } from '@/lib/auth'
 import { signOut } from '@/app/actions/auth'
 import type { Dict, Locale } from '@/lib/i18n'
@@ -13,10 +14,18 @@ export async function Header({ locale, t }: { locale: Locale; t: Dict }) {
   const dashboardLabel =
     user?.role === 'business' ? t.nav.myBusiness : user?.role === 'admin' ? t.nav.admin : t.nav.myProfile
 
+  // Admins see how many payments are waiting for them
+  let waiting = 0
+  if (user?.role === 'admin') {
+    const supabase = await createClient()
+    const { count } = await supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+    waiting = count ?? 0
+  }
+
   const items = [
     { href: `/${locale}/jobs`, label: t.nav.findWork },
     { href: `/${locale}/post-a-job`, label: t.nav.postJob },
-    ...(user ? [{ href: `/${locale}/${homeFor(user.role)}`, label: dashboardLabel }] : []),
+    ...(user ? [{ href: `/${locale}/${homeFor(user.role)}`, label: dashboardLabel, badge: user.role === 'admin' ? waiting : 0 }] : []),
   ]
 
   const logoutForm = (className: string) => (

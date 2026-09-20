@@ -45,3 +45,7 @@ export const LISTING_FEE_USD = process.env.NEXT_PUBLIC_LISTING_FEE_USD ?? ''
 export const WHISH_NUMBER = process.env.NEXT_PUBLIC_WHISH_NUMBER ?? ''
 export const CV_MAX_MB = 5
 export const LOGO_MAX_MB = 2
+
+// Shown on the Terms page. Set NEXT_PUBLIC_CONTACT_PHONE / NEXT_PUBLIC_CONTACT_EMAIL to change them.
+export const CONTACT_PHONE = process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+961 81 880 328'
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? ''

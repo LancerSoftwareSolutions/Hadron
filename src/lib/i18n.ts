@@ -30,6 +30,7 @@ const en = {
     skip: 'Skip to content',
   },
   footer: 'Hadron connects businesses across Lebanon with people looking for work.',
+  footerTerms: 'Terms & Conditions',
   notFound: {
     title: 'Page not found',
     text: 'The page you are looking for does not exist or has moved.',
@@ -173,6 +174,8 @@ const en = {
     working: 'Please wait…',
     resendTitle: 'Need a new confirmation email?',
     resendButton: 'Send confirmation email',
+    agreePrefix: 'I agree to the ',
+    agreeLink: 'Terms & Conditions',
   },
   business: {
     title: 'My business',
@@ -230,7 +233,7 @@ const en = {
     amount: 'Amount paid (USD)',
     method: 'Payment method',
     methods: { whish: 'Whish Money', omt: 'OMT', other: 'Other' },
-    reference: 'Transaction reference',
+    reference: 'Transaction number',
     referenceHint: 'The number shown on your payment receipt.',
     recordPayment: 'Record payment',
     waiting: 'Payment recorded. Waiting for confirmation.',
@@ -247,6 +250,32 @@ const en = {
     setStatus: 'Status',
     updateStatus: 'Update status',
     back: 'Back to my business',
+    edit: 'Edit',
+    editTitle: 'Edit job',
+    saveChanges: 'Save changes',
+    contactTitle: 'Contact details for this job',
+    contactHint: 'These are filled in from your business details. Change them here if this job should show something different.',
+    displayName: 'Business name shown on this job',
+    deleteJob: 'Delete job',
+    deleteWarning: (n: number) =>
+      n > 0
+        ? `This permanently deletes the job and its ${n === 1 ? '1 application' : `${n} applications`}. This cannot be undone.`
+        : 'This permanently deletes the job. This cannot be undone.',
+    deleteConfirm: 'Yes, delete this job',
+    keepRecords: 'Jobs with a payment record can be closed but not deleted.',
+    paymentCode: 'Your payment code',
+    paymentCodeHelp: 'Write this code in the note of your Whish or OMT transfer so we can match your payment.',
+    amountFixed: (fee: string) => `Amount to pay: $${fee}`,
+    renewSoon: (d: number) =>
+      d <= 0
+        ? 'This job expires today. Renew it now to keep it live.'
+        : d === 1
+          ? 'This job expires tomorrow. Renew it now to keep it live without a gap.'
+          : `This job expires in ${d} days. Renew it now to keep it live without a gap.`,
+    paymentHistory: 'Payment history',
+    fixOrCancel: 'Fix a mistake or cancel this payment',
+    fixOrCancelHint: 'You can change the method or transaction number, or cancel, until we confirm the payment.',
+    cancelPayment: 'Cancel this payment',
   },
   seeker: {
     title: 'My profile',
@@ -295,7 +324,17 @@ const en = {
     unverify: 'Remove verification',
     owner: 'Owner',
     recentPayments: 'Recent payments',
-    paymentStatus: { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected' },
+    paymentStatus: { pending: 'Pending', confirmed: 'Confirmed', rejected: 'Rejected', cancelled: 'Cancelled' },
+    settingsTitle: 'Payment settings',
+    fee: 'Listing fee (USD)',
+    feeHint: 'Businesses pay exactly this amount. Leave it empty to let them type any amount.',
+    daysLive: 'Days a job stays live',
+    whishNumber: 'Whish number',
+    whishHint: 'Shown to businesses when they pay.',
+    saveSettings: 'Save settings',
+    code: 'Payment code',
+    whatsapp: 'WhatsApp',
+    waitingCount: (n: number) => (n === 1 ? '1 payment waiting' : `${n} payments waiting`),
   },
   flash: {
     generic: 'Something went wrong. Please try again.',
@@ -326,6 +365,19 @@ const en = {
     payment_confirmed: 'Payment confirmed. The job is live.',
     payment_rejected: 'Payment rejected.',
     verified_updated: 'Verification updated.',
+    listing_updated: 'Job updated.',
+    listing_deleted: 'Job deleted.',
+    delete_failed: 'This job could not be deleted because it has a payment record. You can close it instead.',
+    contact_invalid: 'Check the email address, phone number, or website you entered.',
+    closed_no_edit: 'Closed jobs cannot be edited.',
+    terms_required: 'Please accept the Terms & Conditions to create an account.',
+    reference_required: 'Enter the transaction number from your payment receipt.',
+    reference_used: 'That transaction number has already been used.',
+    payment_already_waiting: 'You already have a payment waiting for this job. Fix or cancel it first.',
+    payment_updated: 'Payment updated.',
+    payment_cancelled: 'Payment cancelled.',
+    settings_saved: 'Settings saved.',
+    settings_invalid: 'Check the fee, the number of days, and the Whish number.',
   } as Record<string, string>,
 }
 
@@ -352,6 +404,7 @@ const ar: Dict = {
     skip: 'انتقل إلى المحتوى',
   },
   footer: 'تربط Hadron الأعمال في لبنان بالباحثين عن عمل.',
+  footerTerms: 'الشروط والأحكام',
   notFound: {
     title: 'الصفحة غير موجودة',
     text: 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها.',
@@ -504,6 +557,8 @@ const ar: Dict = {
     working: 'يرجى الانتظار…',
     resendTitle: 'لم تصلك رسالة التأكيد؟',
     resendButton: 'أرسل رسالة التأكيد',
+    agreePrefix: 'أوافق على ',
+    agreeLink: 'الشروط والأحكام',
   },
   business: {
     title: 'نشاطي التجاري',
@@ -588,6 +643,32 @@ const ar: Dict = {
     setStatus: 'الحالة',
     updateStatus: 'حدّث الحالة',
     back: 'العودة إلى نشاطي التجاري',
+    edit: 'تعديل',
+    editTitle: 'تعديل الوظيفة',
+    saveChanges: 'احفظ التغييرات',
+    contactTitle: 'بيانات التواصل لهذه الوظيفة',
+    contactHint: 'تمت تعبئتها من بيانات نشاطك التجاري. غيّرها هنا إذا أردت أن تظهر بيانات مختلفة في هذه الوظيفة.',
+    displayName: 'اسم النشاط التجاري الظاهر في هذه الوظيفة',
+    deleteJob: 'حذف الوظيفة',
+    deleteWarning: (n: number) =>
+      n > 0
+        ? `سيؤدي هذا إلى حذف الوظيفة وكل طلبات التقديم عليها (${n}) نهائياً. لا يمكن التراجع عن ذلك.`
+        : 'سيؤدي هذا إلى حذف الوظيفة نهائياً. لا يمكن التراجع عن ذلك.',
+    deleteConfirm: 'نعم، احذف هذه الوظيفة',
+    keepRecords: 'الوظائف المسجّلة عليها دفعة يمكن إغلاقها لكن لا يمكن حذفها.',
+    paymentCode: 'رمز دفعتك',
+    paymentCodeHelp: 'اكتب هذا الرمز في ملاحظة تحويل ويش أو OMT لنتمكّن من مطابقة دفعتك.',
+    amountFixed: (fee: string) => `المبلغ المطلوب: ${fee}$`,
+    renewSoon: (d: number) =>
+      d <= 0
+        ? 'تنتهي هذه الوظيفة اليوم. جدّدها الآن لتبقى منشورة.'
+        : d === 1
+          ? 'تنتهي هذه الوظيفة غداً. جدّدها الآن لتبقى منشورة دون انقطاع.'
+          : `تنتهي هذه الوظيفة بعد ${d} أيام. جدّدها الآن لتبقى منشورة دون انقطاع.`,
+    paymentHistory: 'سجل الدفعات',
+    fixOrCancel: 'صحّح خطأً أو ألغِ هذه الدفعة',
+    fixOrCancelHint: 'يمكنك تغيير الطريقة أو رقم العملية، أو إلغاء الدفعة، إلى أن نؤكدها.',
+    cancelPayment: 'ألغِ هذه الدفعة',
   },
   seeker: {
     title: 'ملفي الشخصي',
@@ -636,7 +717,18 @@ const ar: Dict = {
     unverify: 'ألغِ التوثيق',
     owner: 'المالك',
     recentPayments: 'آخر الدفعات',
-    paymentStatus: { pending: 'قيد الانتظار', confirmed: 'مؤكدة', rejected: 'مرفوضة' },
+    paymentStatus: { pending: 'قيد الانتظار', confirmed: 'مؤكدة', rejected: 'مرفوضة', cancelled: 'ملغاة' },
+    settingsTitle: 'إعدادات الدفع',
+    fee: 'رسم النشر (بالدولار)',
+    feeHint: 'تدفع الأعمال هذا المبلغ بالضبط. اتركه فارغاً ليكتب صاحب العمل أي مبلغ.',
+    daysLive: 'عدد أيام بقاء الوظيفة منشورة',
+    whishNumber: 'رقم ويش',
+    whishHint: 'يظهر لأصحاب الأعمال عند الدفع.',
+    saveSettings: 'احفظ الإعدادات',
+    code: 'رمز الدفعة',
+    whatsapp: 'واتساب',
+    waitingCount: (n: number) =>
+      n === 0 ? 'لا دفعات بالانتظار' : n === 1 ? 'دفعة واحدة بالانتظار' : n === 2 ? 'دفعتان بالانتظار' : n <= 10 ? `${n} دفعات بالانتظار` : `${n} دفعة بالانتظار`,
   },
   flash: {
     generic: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
@@ -667,6 +759,19 @@ const ar: Dict = {
     payment_confirmed: 'تم تأكيد الدفعة. الوظيفة منشورة الآن.',
     payment_rejected: 'تم رفض الدفعة.',
     verified_updated: 'تم تحديث التوثيق.',
+    listing_updated: 'تم تحديث الوظيفة.',
+    listing_deleted: 'تم حذف الوظيفة.',
+    delete_failed: 'تعذّر حذف هذه الوظيفة لأنها مسجّل عليها دفعة. يمكنك إغلاقها بدلاً من ذلك.',
+    contact_invalid: 'تحقّق من البريد الإلكتروني أو رقم الهاتف أو الموقع الذي أدخلته.',
+    closed_no_edit: 'لا يمكن تعديل الوظائف المغلقة.',
+    terms_required: 'يرجى الموافقة على الشروط والأحكام لإنشاء حساب.',
+    reference_required: 'أدخل رقم العملية الظاهر على إيصال الدفع.',
+    reference_used: 'رقم العملية هذا مستخدم من قبل.',
+    payment_already_waiting: 'لديك دفعة بانتظار التأكيد لهذه الوظيفة. عدّلها أو ألغِها أولاً.',
+    payment_updated: 'تم تحديث الدفعة.',
+    payment_cancelled: 'تم إلغاء الدفعة.',
+    settings_saved: 'تم حفظ الإعدادات.',
+    settings_invalid: 'تحقّق من الرسم وعدد الأيام ورقم ويش.',
   },
 }
 
